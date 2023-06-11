@@ -1,0 +1,18 @@
+pipeline:
+  _target_: frames_into_pytorch.Pipeline
+  input_src: media/in.mp4
+  num_buffers: 200
+  frame_format: 'RGBA'
+  pixel_bytes: 4
+  sink_name: s
+
+  detector:
+    _target_: torch.hub.load
+    repo_or_dir: NVIDIA/DeepLearningExamples:torchhub
+    model: nvidia_ssd
+    model_math: fp32
+
+  preprocess:
+    _target_: torchvision.transforms.ToTensor
+  
+  device: cuda

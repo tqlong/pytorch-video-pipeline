@@ -1,5 +1,6 @@
-media
-logs/*
+outputs/
+media/
+logs/
 core
 *DS_Store*
 *qdrep

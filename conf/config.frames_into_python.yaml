@@ -1,0 +1,5 @@
+pipeline:
+  _target_: frames_into_python.Pipeline
+  input_src: media/in.mp4
+  num_buffers: 200
+  sink_name: s
