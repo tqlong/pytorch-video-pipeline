@@ -47,5 +47,5 @@ sleep:
 
 pipeline: cli.pipeline.png frames_into_python.pipeline.png frames_into_pytorch.pipeline.png
 
-tuning: logs/tuning_baseline.nsys-rep logs/tuning_postprocess_1.nsys-rep logs/tuning_postprocess_2.nsys-rep logs/tuning_batch.nsys-rep logs/tuning_fp16.nsys-rep logs/tuning_dtod.nsys-rep # logs/tuning_concurrency.nsys-rep
+tuning: logs/tuning_baseline.nsys-rep logs/tuning_postprocess_1.nsys-rep logs/tuning_postprocess_2.nsys-rep logs/tuning_batch.nsys-rep logs/tuning_fp16.nsys-rep logs/tuning_dtod.nsys-rep logs/tuning_concurrency.nsys-rep
 
