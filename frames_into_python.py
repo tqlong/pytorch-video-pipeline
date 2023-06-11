@@ -48,7 +48,7 @@ class Pipeline:
 
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config.frames_into_python")
+@hydra.main(version_base=None, config_path="conf", config_name="frames_into_python")
 def my_app(cfg : DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 

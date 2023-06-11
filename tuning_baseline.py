@@ -53,7 +53,7 @@ class Pipeline:
         self.frames_processed = 0
 
         self.detector.eval().to(device)
-        self.detector(torch.zeros(2, 3, 300, 300, device=device))
+        self.detector(torch.zeros(1,3,300,300,device=device))
 
         pipeline.get_by_name(sink_name).get_static_pad('sink').add_probe(
             Gst.PadProbeType.BUFFER,
@@ -66,11 +66,12 @@ class Pipeline:
 
         with nvtx_range('on_frame_probe'):
             buf = info.get_buffer()
-            print(f'new [{buf.pts / Gst.SECOND:6.2f}]')
 
             image_tensor = self.buffer_to_image_tensor(buf, pad.get_current_caps())
             image_batch = self.preprocess(image_tensor.unsqueeze(0))
             self.frames_processed += image_batch.size(0)
+
+            print(f'[{buf.pts / Gst.SECOND:6.2f}]', "frames", self.frames_processed)
 
             with torch.no_grad():
                 with nvtx_range('inference'):
@@ -79,11 +80,11 @@ class Pipeline:
 
             return Gst.PadProbeReturn.OK
 
+
     def buffer_to_image_tensor(self, buf, caps):
         with nvtx_range('buffer_to_image_tensor'):
             caps_structure = caps.get_structure(0)
-            height, width = caps_structure.get_value(
-                'height'), caps_structure.get_value('width')
+            height, width = caps_structure.get_value('height'), caps_structure.get_value('width')
 
             is_mapped, map_info = buf.map(Gst.MapFlags.READ)
             if is_mapped:
@@ -92,36 +93,13 @@ class Pipeline:
                         (height, width, self.pixel_bytes),
                         dtype=np.uint8,
                         buffer=map_info.data
-                    )  # extend array lifetime beyond subsequent unmap
+                    )
                     return torch.from_numpy(
                         image_array[:,:,:3].copy() # RGBA -> RGB, and extend lifetime beyond subsequent unmap
                     )
                 finally:
                     buf.unmap(map_info)
 
-    def set_playing_state(self):
-        self.pipeline.set_state(Gst.State.PLAYING)
-
-    def loop(self):
-        try:
-            while True:
-                msg = self.pipeline.get_bus().timed_pop_filtered(
-                    Gst.SECOND,
-                    Gst.MessageType.EOS | Gst.MessageType.ERROR
-                )
-                if msg:
-                    text = msg.get_structure().to_string() if msg.get_structure() else ''
-                    msg_type = Gst.message_type_get_name(msg.type)
-                    print(f'{msg.src.name}: [{msg_type}] {text}')
-                    break
-        finally:
-            finish_time = time.time()
-            open(f'logs/{os.path.splitext(sys.argv[0])[0]}.pipeline.dot', 'w').write(
-                Gst.debug_bin_to_dot_data(
-                    self.pipeline, Gst.DebugGraphDetails.ALL)
-            )
-            self.pipeline.set_state(Gst.State.NULL)
-            print(f'FPS: {self.frames_processed / (finish_time - self.start_time):.2f}')
 
     def preprocess(self, image_batch):
         '300x300 centre crop, normalize, HWC -> CHW'
@@ -143,9 +121,11 @@ class Pipeline:
                 self.normalize(input_batch / 255)
             ).contiguous()
 
+
     def normalize(self, input_tensor):
         'Nvidia SSD300 code uses mean and std-dev of 128/256'
         return (2.0 * input_tensor) - 1.0
+
 
     def postprocess(self, locs, labels):
         with nvtx_range('postprocess'):
@@ -155,13 +135,37 @@ class Pipeline:
                 if scores.shape[0] > 0:
                     print(bboxes, classes, scores)
 
-@hydra.main(version_base=None, config_path="conf", config_name="config.tuning_baseline")
+    def set_playing_state(self):
+        self.pipeline.set_state(Gst.State.PLAYING)
+
+    def loop(self):
+        try:
+            while True:
+                msg = self.pipeline.get_bus().timed_pop_filtered(
+                    Gst.SECOND,
+                    Gst.MessageType.EOS | Gst.MessageType.ERROR
+                )
+                if msg:
+                    text = msg.get_structure().to_string() if msg.get_structure() else ''
+                    msg_type = Gst.message_type_get_name(msg.type)
+                    print(f'{msg.src.name}: [{msg_type}] {text}')
+                    break
+        finally:
+            finish_time = time.time()
+            open(f'logs/{os.path.splitext(sys.argv[0])[0]}.pipeline.dot', 'w').write(
+                Gst.debug_bin_to_dot_data(self.pipeline, Gst.DebugGraphDetails.ALL)
+            )
+            self.pipeline.set_state(Gst.State.NULL)
+            print(f'FPS: {self.frames_processed / (finish_time - self.start_time):.2f}')
+
+
+@hydra.main(version_base=None, config_path="conf", config_name="tuning_postprocess_1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 
     Gst.init()
     pipeline: Pipeline = hydra.utils.instantiate(cfg.pipeline)
-    print("new precision", pipeline.model_precision)
+    print("precision", pipeline.model_precision)
     pipeline.set_playing_state()
     pipeline.loop()
 

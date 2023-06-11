@@ -93,7 +93,7 @@ class Pipeline:
             self.pipeline.set_state(Gst.State.NULL)
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config.frames_into_pytorch")
+@hydra.main(version_base=None, config_path="conf", config_name="frames_into_pytorch")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 

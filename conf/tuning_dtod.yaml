@@ -1,0 +1,26 @@
+model_precision: fp16
+
+pipeline:
+  _target_: tuning_dtod.Pipeline
+  input_src: media/in.mp4
+  num_buffers: 256
+  frame_format: 'RGBA'
+  pixel_bytes: 4
+  sink_name: s
+  model_precision: ${model_precision}
+  batch_size: 8
+
+  detector:
+    _target_: torch.hub.load
+    repo_or_dir: NVIDIA/DeepLearningExamples:torchhub
+    model: nvidia_ssd
+    model_math: ${model_precision}
+  
+  device: cuda
+
+  ssd_utils:
+    _target_: torch.hub.load
+    repo_or_dir: NVIDIA/DeepLearningExamples:torchhub
+    model: nvidia_ssd_processing_utils
+  
+  detection_threshold: 0.4

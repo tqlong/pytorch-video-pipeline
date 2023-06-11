@@ -159,7 +159,7 @@ class Pipeline:
             print(f'FPS: {self.frames_processed / (finish_time - self.start_time):.2f}')
 
 
-@hydra.main(version_base=None, config_path="conf", config_name="config.tuning_postprocess_1")
+@hydra.main(version_base=None, config_path="conf", config_name="tuning_postprocess_1")
 def my_app(cfg: DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
 

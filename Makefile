@@ -23,6 +23,8 @@ logs/cli.pipeline.dot:
 logs/%.pipeline.dot: %.py
 	${DOCKER_PY_CMD} pytorch-video-pipeline:latest $<
 
+%.run: %.py
+	${DOCKER_PY_CMD} pytorch-video-pipeline:latest $<
 
 logs/%.nsys-rep: %.py
 	${DOCKER_NSYS_CMD} pytorch-video-pipeline:latest ${PROFILE_CMD} -o $@ python $<
@@ -45,5 +47,5 @@ sleep:
 
 pipeline: cli.pipeline.png frames_into_python.pipeline.png frames_into_pytorch.pipeline.png
 
-tuning: logs/tuning_baseline.nsys-rep logs/tuning_postprocess_1.nsys-rep logs/tuning_postprocess_2.nsys-rep logs/tuning_batch.nsys-rep logs/tuning_fp16.nsys-rep logs/tuning_dtod.nsys-rep logs/tuning_concurrency.nsys-rep
+tuning: logs/tuning_baseline.nsys-rep logs/tuning_postprocess_1.nsys-rep logs/tuning_postprocess_2.nsys-rep logs/tuning_batch.nsys-rep logs/tuning_fp16.nsys-rep logs/tuning_dtod.nsys-rep # logs/tuning_concurrency.nsys-rep
 
